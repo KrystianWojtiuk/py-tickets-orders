@@ -73,8 +73,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = self.queryset.filter(user=self.request.user)
-        if self.action == "list":
+
+        if self.action in ("list", "retrieve"):
             return queryset.prefetch_related(
-                "tickets__movie_session__movie",
-                "tickets__movie_session__cinema_hall")
+                    "tickets__movie_session__cinema_hall",
+                    "tickets__movie_session__movie")
         return queryset

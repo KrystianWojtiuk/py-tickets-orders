@@ -1,3 +1,4 @@
+from django.utils.dateparse import parse_date
 from rest_framework import viewsets
 
 from cinema.models import Genre, Actor, CinemaHall, Movie, MovieSession, Order
@@ -81,6 +82,24 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
 
         return MovieSessionSerializer
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        date = self.request.query_params.get("date")
+        movie = self.request.query_params.get("movie")
+
+        if date:
+            date_obj = parse_date(date)
+            if date_obj:
+                queryset = queryset.filter(show_time__date=date_obj)
+
+        if movie:
+            try:
+                movie_id_int = int(movie)
+                queryset = queryset.filter(movie_id=movie_id_int)
+            except ValueError:
+                pass
+
+        return queryset
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()

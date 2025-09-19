@@ -12,7 +12,7 @@ from cinema.serializers import (
     MovieSessionListSerializer,
     MovieDetailSerializer,
     MovieSessionDetailSerializer,
-    MovieListSerializer, OrderSerializer, OrderListSerializer,
+    MovieListSerializer, OrderSerializer, OrderListSerializer, OrderCreateSerializer,
 )
 
 
@@ -67,10 +67,14 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return OrderListSerializer
+        elif self.action == "create":
+            return OrderCreateSerializer
         return OrderSerializer
 
     def get_queryset(self):
         queryset = self.queryset.filter(user=self.request.user)
         if self.action == "list":
-            return queryset.prefetch_related("tickets")
+            return queryset.prefetch_related(
+                "tickets__movie_session__movie",
+                "tickets__movie_session__cinema_hall")
         return queryset

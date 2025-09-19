@@ -96,3 +96,35 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class OrderListSerializer(OrderSerializer):
     tickets = TicketInOrderListSerializer(many=True, read_only=True)
+
+
+class TicketCreateSerializer(serializers.ModelSerializer):
+    movie_session = serializers.PrimaryKeyRelatedField(
+        queryset=MovieSession.objects.all()
+    )
+
+    class Meta:
+        model = Ticket
+        fields = ("row", "seat", "movie_session")
+
+
+class OrderCreateSerializer(serializers.ModelSerializer):
+    tickets = TicketCreateSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = ("tickets",)
+
+    def create(self, validated_data):
+        tickets_data = validated_data.pop("tickets")
+        user = self.context["request"].user
+
+        order = Order.objects.create(user=user)
+
+        tickets = [
+            Ticket(order=order, **ticket_data)
+            for ticket_data in tickets_data
+        ]
+        Ticket.objects.bulk_create(tickets)
+
+        return order

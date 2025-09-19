@@ -1,3 +1,4 @@
+from django.db.models import F, Count, ExpressionWrapper, IntegerField
 from django.utils.dateparse import parse_date
 from rest_framework import viewsets
 
@@ -83,7 +84,7 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
         return MovieSessionSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = self.queryset
         date = self.request.query_params.get("date")
         movie = self.request.query_params.get("movie")
 
@@ -98,6 +99,18 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(movie_id=movie_id_int)
             except ValueError:
                 pass
+
+        if self.action in ("list", "retrieve"):
+            queryset = queryset.prefetch_related("tickets")
+
+        if self.action == "list":
+            queryset = queryset.select_related("cinema_hall").annotate(
+                tickets_available=ExpressionWrapper(
+                    F("cinema_hall__rows") * F("cinema_hall__seats_in_row") - Count("tickets"),
+                    output_field=IntegerField(),
+                )
+            )
+
 
         return queryset
 
